@@ -1,60 +1,111 @@
-async function buscar() {
-    const query = document.getElementById('busqueda').value;
-    const resultadosDiv = document.getElementById('resultados');
-    const estadoDiv = document.getElementById('estado');
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Buscador de Libros 2026</title>
+    <style>
+        /* Estilos para recuperar la apariencia */
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background-color: #f0f2f5; display: flex; justify-content: center; padding: 20px; }
+        .main-card { background: white; padding: 25px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 100%; max-width: 500px; }
+        h1 { color: #1a73e8; text-align: center; margin-top: 0; }
+        .search-container { display: flex; gap: 10px; margin-bottom: 20px; }
+        input { flex: 1; padding: 12px; border: 1px solid #ddd; border-radius: 8px; outline: none; }
+        input:focus { border-color: #1a73e8; }
+        button { background: #1a73e8; color: white; border: none; padding: 12px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; }
+        button:hover { background: #1557b0; }
+        #status { text-align: center; font-size: 14px; margin-bottom: 15px; min-height: 20px; }
+        .book-item { display: flex; gap: 15px; border-bottom: 1px solid #eee; padding: 15px 0; animation: fadeIn 0.3s ease; }
+        .book-item img { width: 80px; height: 110px; object-fit: cover; border-radius: 5px; background: #eee; }
+        .book-details h3 { margin: 0 0 5px 0; font-size: 17px; color: #333; }
+        .book-details p { margin: 2px 0; font-size: 13px; color: #666; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
 
-    if (!query) {
-        estadoDiv.innerHTML = "<span class='error'>Escribe algo para buscar.</span>";
-        return;
-    }
+<div class="main-card">
+    <h1>📚 Lectora Web</h1>
+    <div class="search-container">
+        <input type="text" id="query" placeholder="Título, Autor o ISBN...">
+        <button onclick="buscar()">Buscar</button>
+    </div>
 
-    estadoDiv.innerHTML = "Buscando...";
-    resultadosDiv.innerHTML = "";
+    <div id="status"></div>
+    <div id="results"></div>
+</div>
 
-    try {
-        // CONSTRUCCIÓN SEGURA DE URL (Sin comillas invertidas para evitar errores en GitHub)
-        const baseUrl = "https://www.googleapis.com/books/v1/volumes";
-        const finalUrl = baseUrl + "?q=" + encodeURIComponent(query) + "&key=" + API_KEY;
-        
-        console.log("Intentando conectar a:", finalUrl);
+<script>
+    // Tu API Key integrada correctamente para 2026
+    const MI_API_KEY = "AIzaSyBPX542IsBSTPXC5x0_i9dH9MVvdxRe94";
 
-        const response = await fetch(finalUrl);
-        
-        if (!response.ok) {
-            // Si devuelve 403, tu API Key tiene restricciones en Google Console
-            // Si devuelve 400, la búsqueda está mal formada
-            throw new Error("Respuesta del servidor: " + response.status);
-        }
+    async function buscar() {
+        const query = document.getElementById('query').value;
+        const resultsDiv = document.getElementById('results');
+        const statusDiv = document.getElementById('status');
 
-        const data = await response.json();
-
-        if (!data.items || data.items.length === 0) {
-            estadoDiv.innerHTML = "<span class='error'>No se encontraron libros. Prueba con otro título.</span>";
+        if (!query) {
+            statusDiv.innerHTML = "<span style='color:red'>⚠️ Escribe algo para buscar.</span>";
             return;
         }
 
-        estadoDiv.innerHTML = "<span class='success'>Resultados encontrados:</span>";
+        statusDiv.innerHTML = "🔍 Buscando en la base de datos...";
+        resultsDiv.innerHTML = "";
 
-        data.items.forEach(libro => {
-            const info = libro.volumeInfo;
-            // Forzamos HTTPS en las imágenes para evitar bloqueos de GitHub Pages
-            const portada = info.imageLinks ? info.imageLinks.thumbnail.replace('http:', 'https:') : 'via.placeholder.com';
+        // Construcción de URL con protocolo seguro HTTPS (vital para GitHub Pages)
+        const url = "www.googleapis.com" + encodeURIComponent(query) + "&key=" + MI_API_KEY;
+
+        try {
+            const response = await fetch(url);
             
-            const div = document.createElement('div');
-            div.className = 'libro';
-            div.innerHTML = `
-                <img src="${portada}" alt="Portada">
-                <div class="info">
-                    <h3>${info.title}</h3>
-                    <p><strong>Autor:</strong> ${info.authors ? info.authors.join(', ') : 'Desconocido'}</p>
-                    <p><a href="${info.infoLink}" target="_blank">Ver en Google Books</a></p>
-                </div>
-            `;
-            resultadosDiv.appendChild(div);
-        });
+            if (!response.ok) {
+                // Si sale error 403, debes ir a Google Cloud Console y quitar restricciones a la clave
+                throw new Error("Error de servidor: " + response.status);
+            }
 
-    } catch (error) {
-        console.error("Error detallado:", error);
-        estadoDiv.innerHTML = "<span class='error'>Error de conexión: " + error.message + "</span>";
+            const data = await response.json();
+
+            if (!data.items || data.items.length === 0) {
+                statusDiv.innerHTML = "❌ No se encontraron libros.";
+                return;
+            }
+
+            statusDiv.innerHTML = "✅ Se encontraron " + data.items.length + " resultados:";
+
+            data.items.forEach(book => {
+                const info = book.volumeInfo;
+                // Forzar HTTPS en las portadas para evitar bloqueos
+                let thumb = "via.placeholder.com";
+                if (info.imageLinks && info.imageLinks.thumbnail) {
+                    thumb = info.imageLinks.thumbnail.replace("http:", "https:");
+                }
+
+                const authors = info.authors ? info.authors.join(", ") : "Desconocido";
+                
+                resultsDiv.innerHTML += `
+                    <div class="book-item">
+                        <img src="${thumb}" alt="Portada">
+                        <div class="book-details">
+                            <h3>${info.title}</h3>
+                            <p><strong>Autor:</strong> ${authors}</p>
+                            <p><strong>Año:</strong> ${info.publishedDate || 'N/A'}</p>
+                            <a href="${info.infoLink}" target="_blank" style="color:#1a73e8; font-size:12px; text-decoration:none;">Más información →</a>
+                        </div>
+                    </div>
+                `;
+            });
+
+        } catch (error) {
+            console.error("Error completo:", error);
+            statusDiv.innerHTML = "<span style='color:red'>❌ Error: " + error.message + "</span>";
+        }
     }
-}
+
+    // Activar búsqueda con la tecla Enter
+    document.getElementById('query').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') buscar();
+    });
+</script>
+
+</body>
+</html>
