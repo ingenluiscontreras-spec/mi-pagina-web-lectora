@@ -1,102 +1,57 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Buscador de Libros 2026</title>
-    <style>
-        body { font-family: 'Segoe UI', Arial, sans-serif; background: #f0f2f5; padding: 20px; display: flex; flex-direction: column; align-items: center; }
-        .container { max-width: 600px; width: 100%; background: white; padding: 30px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
-        .search-group { display: flex; gap: 10px; margin-bottom: 20px; }
-        input { flex: 1; padding: 12px; border: 2px solid #ddd; border-radius: 8px; outline: none; }
-        input:focus { border-color: #2563eb; }
-        button { background: #2563eb; color: white; border: none; padding: 12px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; }
-        button:hover { background: #1d4ed8; }
-        .libro { border-bottom: 1px solid #eee; padding: 15px 0; display: flex; gap: 15px; }
-        .libro img { width: 80px; height: 120px; object-fit: cover; border-radius: 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        .info h3 { margin: 0 0 5px 0; color: #1e293b; font-size: 18px; }
-        .info p { margin: 3px 0; font-size: 14px; color: #64748b; }
-        #estado { margin-bottom: 15px; font-weight: bold; }
-        .error { color: #dc2626; }
-        .success { color: #16a34a; }
-    </style>
-</head>
-<body>
+async function buscar() {
+    const query = document.getElementById('busqueda').value;
+    const resultadosDiv = document.getElementById('resultados');
+    const estadoDiv = document.getElementById('estado');
 
-<div class="container">
-    <h2>🔍 Buscador de Libros</h2>
-    <div class="search-group">
-        <input type="text" id="busqueda" placeholder="Título, Autor o ISBN...">
-        <button onclick="buscar()">Buscar</button>
-    </div>
+    if (!query) {
+        estadoDiv.innerHTML = "<span class='error'>Escribe algo para buscar.</span>";
+        return;
+    }
 
-    <div id="estado"></div>
-    <div id="resultados"></div>
-</div>
+    estadoDiv.innerHTML = "Buscando...";
+    resultadosDiv.innerHTML = "";
 
-<script>
-    const API_KEY = "AIzaSyBPX542IsBSTPXC5x0_i9dH9MVvdxRe94"; // Tu API Key integrada
+    try {
+        // CORRECCIÓN: La URL debe empezar con https:// y usar comillas invertidas ``
+        const url = `www.googleapis.com{encodeURIComponent(query)}&key=${API_KEY}`;
+        
+        console.log("Consultando a:", url); // Esto te servirá para ver la ruta real en consola
 
-    async function buscar() {
-        const query = document.getElementById('busqueda').value;
-        const resultadosDiv = document.getElementById('resultados');
-        const estadoDiv = document.getElementById('estado');
+        const response = await fetch(url);
+        
+        if (!response.ok) {
+            throw new Error(`Error de servidor: ${response.status}`);
+        }
 
-        if (!query) {
-            estadoDiv.innerHTML = "<span class='error'>Escribe algo para buscar.</span>";
+        const data = await response.json();
+
+        if (!data.items) {
+            estadoDiv.innerHTML = "<span class='error'>No se encontraron libros.</span>";
             return;
         }
 
-        estadoDiv.innerHTML = "Buscando...";
-        resultadosDiv.innerHTML = "";
+        estadoDiv.innerHTML = `<span class='success'>Se encontraron ${data.items.length} resultados:</span>`;
 
-        try {
-            // Consulta a Google Books API con tu Key
-            const url = `www.googleapis.com{encodeURIComponent(query)}&key=${API_KEY}`;
-            const response = await fetch(url);
+        data.items.forEach(libro => {
+            const info = libro.volumeInfo;
+            const portada = info.imageLinks ? info.imageLinks.thumbnail.replace('http:', 'https:') : 'via.placeholder.com';
             
-            if (!response.ok) {
-                throw new Error(`Error de servidor: ${response.status}`);
-            }
+            const div = document.createElement('div');
+            div.className = 'libro';
+            div.innerHTML = `
+                <img src="${portada}" alt="Portada">
+                <div class="info">
+                    <h3>${info.title}</h3>
+                    <p><strong>Autor:</strong> ${info.authors ? info.authors.join(', ') : 'Desconocido'}</p>
+                    <p><strong>Año:</strong> ${info.publishedDate || 'N/A'}</p>
+                    <a href="${info.infoLink}" target="_blank" style="color: #2563eb; text-decoration: none; font-size: 13px;">Más info →</a>
+                </div>
+            `;
+            resultadosDiv.appendChild(div);
+        });
 
-            const data = await response.json();
-
-            if (!data.items) {
-                estadoDiv.innerHTML = "<span class='error'>No se encontraron libros.</span>";
-                return;
-            }
-
-            estadoDiv.innerHTML = `<span class='success'>Se encontraron ${data.items.length} resultados:</span>`;
-
-            data.items.forEach(libro => {
-                const info = libro.volumeInfo;
-                const portada = info.imageLinks ? info.imageLinks.thumbnail.replace('http:', 'https:') : 'via.placeholder.com';
-                
-                const div = document.createElement('div');
-                div.className = 'libro';
-                div.innerHTML = `
-                    <img src="${portada}" alt="Portada">
-                    <div class="info">
-                        <h3>${info.title}</h3>
-                        <p><strong>Autor:</strong> ${info.authors ? info.authors.join(', ') : 'Desconocido'}</p>
-                        <p><strong>Año:</strong> ${info.publishedDate || 'N/A'}</p>
-                        <a href="${info.infoLink}" target="_blank" style="color: #2563eb; text-decoration: none; font-size: 13px;">Más info →</a>
-                    </div>
-                `;
-                resultadosDiv.appendChild(div);
-            });
-
-        } catch (error) {
-            console.error(error);
-            estadoDiv.innerHTML = `<span class='error'>Error al conectar: ${error.message}. Verifica que la API Key no tenga restricciones de dominio en Google Console.</span>`;
-        }
+    } catch (error) {
+        console.error("Detalle del error:", error);
+        estadoDiv.innerHTML = `<span class='error'>Error: ${error.message}. Asegúrate de que la URL en el código empiece con https://</span>`;
     }
-
-    // Buscar con Enter
-    document.getElementById('busqueda').addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') buscar();
-    });
-</script>
-
-</body>
-</html>
+}
