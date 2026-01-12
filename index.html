@@ -3,66 +3,101 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Odyssey</title>
+    <title>Odyssey | Híbrido</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="cdnjs.cloudflare.com" rel="stylesheet">
     <style>
-        body { font-family: sans-serif; padding: 20px; background-color: #E0F2F1; }
-        .container { max-width: 400px; margin: auto; }
-        .input-group { display: flex; gap: 10px; margin-bottom: 10px; }
-        input { flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 8px; }
-        button { padding: 10px 15px; background-color: #00BFA5; color: white; border: none; border-radius: 8px; cursor: pointer; }
-        .card { background-color: rgba(255, 255, 255, 0.6); padding: 15px; margin-bottom: 10px; border-radius: 10px; border: 1px solid #fff; }
-        .title { font-weight: bold; }
-        .author { font-size: 0.9em; color: #555; }
-        .status { font-size: 0.8em; color: #777; }
+        body { background-color: #E0F2F1; font-family: sans-serif; }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.55);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.7);
+            border-radius: 24px;
+        }
     </style>
 </head>
-<body>
-    <div class="container">
-        <h1>Odyssey</h1>
-        <p class="status" id="statusMessage">Esperando búsqueda...</p>
-        <div class="input-group">
-            <input type="text" id="searchInput" placeholder="Buscar libros (ej: Harry Potter)...">
-            <button onclick="searchBooks()">Buscar</button>
+<body class="p-6">
+    <div class="max-w-md mx-auto">
+        <header class="mb-8">
+            <h1 class="text-5xl font-black text-[#004D40] tracking-tighter">Odyssey</h1>
+            <p class="text-[#00BFA5] font-bold text-xs uppercase tracking-widest">Ecosistema Híbrido</p>
+        </header>
+
+        <div class="relative mb-4 flex gap-3">
+            <input type="text" id="searchInput" placeholder="Buscar (Nube/Local)..." 
+                class="flex-1 h-14 pl-4 pr-4 rounded-xl bg-white shadow-lg focus:outline-none text-lg">
+            <button onclick="searchBooks()" class="bg-[#00BFA5] w-14 h-14 rounded-xl flex items-center justify-center text-white shadow-lg">
+                <i class="fa-solid fa-magnifying-glass"></i>
+            </button>
         </div>
-        <div id="results"></div>
+        <p id="statusMessage" class="text-xs text-slate-500 mb-4 ml-2">Modo Nube (Intentando conectar)...</p>
+
+        <div id="results" class="space-y-4"></div>
     </div>
 
     <script>
+        // Datos de emergencia locales si la red falla
+        const LOCAL_KNOWLEDGE = [
+            { key: 'OL1', title: 'Sapiens', author_name: ['Yuval Noah Harari'], first_publish_year: 2014 },
+            { key: 'OL2', title: '1984', author_name: ['George Orwell'], first_publish_year: 1949 },
+            { key: 'OL3', title: 'Clean Code', author_name: ['Robert C. Martin'], first_publish_year: 2008 },
+        ];
+        const searchInput = document.getElementById('searchInput');
+        const resultsContainer = document.getElementById('results');
+        const statusMessage = document.getElementById('statusMessage');
+
         async function searchBooks() {
-            const query = document.getElementById('searchInput').value;
+            const query = searchInput.value;
             if (query.length < 3) {
-                document.getElementById('statusMessage').textContent = 'Ingrese 3+ caracteres.';
+                statusMessage.textContent = 'Ingrese 3+ caracteres.';
                 return;
             }
-            document.getElementById('statusMessage').textContent = 'Buscando en Open Library...';
-            document.getElementById('results').innerHTML = '';
+            statusMessage.textContent = 'Buscando en la Nube...';
 
             try {
-                // Usando Open Library API: más ligera y compatible
                 const response = await fetch(`openlibrary.org{encodeURIComponent(query)}&limit=8`);
-                if (!response.ok) throw new Error(response.status);
+                if (!response.ok) throw new Error('Servidor no responde (Nube)');
                 const data = await response.json();
-                displayResults(data);
+                
+                if (data.docs && data.docs.length > 0) {
+                    displayResults(data.docs, 'Nube Activa');
+                } else {
+                    fallbackToLocal('No se encontraron resultados en la Nube.');
+                }
             } catch (error) {
-                document.getElementById('statusMessage').textContent = 'Error de red: ' + error.message;
+                fallbackToLocal('Error de Red. Usando datos locales. ' + error.message);
             }
         }
 
-        function displayResults(data) {
-            if (data.docs && data.docs.length > 0) {
-                document.getElementById('statusMessage').textContent = `Hallados ${data.docs.length} resultados.`;
-                data.docs.forEach(item => {
-                    const card = document.createElement('div');
-                    card.className = 'card';
-                    card.innerHTML = `
-                        <div class="title">${item.title}</div>
-                        <div class="author">${item.author_name ? item.author_name.join(', ') : 'Desconocido'}</div>
-                    `;
-                    document.getElementById('results').appendChild(card);
-                });
-            } else {
-                document.getElementById('statusMessage').textContent = 'No se encontraron resultados.';
-            }
+        function fallbackToLocal(msg) {
+            const query = searchInput.value.toLowerCase();
+            const filtered = LOCAL_KNOWLEDGE.filter(book => 
+                book.title.toLowerCase().includes(query) || book.author_name.join(', ').toLowerCase().includes(query)
+            );
+            displayResults(filtered, msg);
+        }
+
+        function displayResults(books, status) {
+            resultsContainer.innerHTML = '';
+            statusMessage.textContent = status;
+            books.forEach(book => {
+                const card = `
+                    <div class="glass-card p-6 mb-4">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <h3 class="font-bold text-slate-800 text-lg leading-tight">${book.title}</h3>
+                                <p class="text-slate-500 text-sm mt-1">${book.author_name ? book.author_name.join(', ') : 'Desconocido'}</p>
+                                <p class="text-slate-500 text-xs mt-1">${book.first_publish_year ? book.first_publish_year : 'N/A'}</p>
+                            </div>
+                            <button onclick="alert('Conocimiento integrado: ${book.title}')" class="bg-[#00BFA5] w-12 h-12 rounded-xl flex items-center justify-center text-white shadow-lg">
+                                <i class="fa-solid fa-brain"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+                resultsContainer.innerHTML += card;
+            });
         }
     </script>
 </body>
