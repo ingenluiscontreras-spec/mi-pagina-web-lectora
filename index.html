@@ -3,33 +3,38 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Odyssey | Fix</title>
+    <title>Odyssey | Final</title>
+    <!-- CSS en línea para evitar dependencias externas -->
     <style>
-        body { font-family: sans-serif; padding: 20px; background-color: #E0F2F1; }
+        body { font-family: sans-serif; padding: 20px; background-color: #E0F2F1; margin: 0; }
         .container { max-width: 400px; margin: auto; }
+        .header { font-size: 24px; font-weight: bold; color: #004D40; margin-bottom: 10px; }
+        .subtitle { font-size: 12px; color: #00BFA5; text-transform: uppercase; margin-bottom: 15px; }
         .input-group { display: flex; gap: 10px; margin-bottom: 10px; }
         input { flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 8px; }
         button { padding: 10px 15px; background-color: #00BFA5; color: white; border: none; border-radius: 8px; cursor: pointer; }
         .card { background-color: rgba(255, 255, 255, 0.6); padding: 15px; margin-bottom: 10px; border-radius: 10px; border: 1px solid #fff; }
         .title { font-weight: bold; }
         .author { font-size: 0.9em; color: #555; }
-        .status { font-size: 0.8em; color: #777; }
+        .status { font-size: 0.8em; color: #777; margin-bottom: 5px; }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Odyssey</h1>
+        <div class="header">Odyssey</div>
+        <div class="subtitle">Ecosistema de Cognición</div>
         <p class="status" id="statusMessage">Esperando búsqueda...</p>
         <div class="input-group">
-            <input type="text" id="searchInput" placeholder="Buscar libros (ej: Sapiens)...">
+            <input type="text" id="searchInput" placeholder="Buscar libros...">
             <button onclick="searchBooks()">Buscar</button>
         </div>
         <div id="results"></div>
     </div>
 
+    <!-- JavaScript en línea -->
     <script>
         function searchBooks() {
-            const query = document.getElementById('searchInput').value;
+            const query = document.getElementById('searchInput').value.trim();
             if (query.length < 3) {
                 document.getElementById('statusMessage').textContent = 'Ingrese 3+ caracteres.';
                 return;
@@ -37,7 +42,7 @@
             document.getElementById('statusMessage').textContent = 'Buscando...';
             document.getElementById('results').innerHTML = '';
 
-            // Construcción de URL usando concatenación simple para máxima compatibilidad
+            // URL CORRECTA
             const url = "www.googleapis.com" + encodeURIComponent(query) + "&maxResults=8";
 
             fetch(url)
