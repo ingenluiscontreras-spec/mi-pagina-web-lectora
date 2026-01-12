@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Odyssey | Conocimiento</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="cdnjs.cloudflare.com" rel="stylesheet">
+    <style>
+        body { background-color: #E0F2F1; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.55);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.7);
+            border-radius: 24px;
+        }
+    </style>
+</head>
+<body class="p-6">
+    <div class="max-w-md mx-auto">
+        <!-- Header -->
+        <header class="mb-8">
+            <h1 class="text-5xl font-black text-[#004D40] tracking-tighter">Odyssey</h1>
+            <p class="text-[#00BFA5] font-bold text-xs uppercase tracking-widest">Ecosistema de Cognición</p>
+        </header>
+
+        <!-- Buscador -->
+        <div class="relative mb-8">
+            <i class="fa-solid fa-brain absolute left-4 top-4 text-[#00BFA5] text-xl"></i>
+            <input type="text" id="searchInput" placeholder="Buscar conocimiento..." 
+                class="w-full h-14 pl-12 pr-4 rounded-2xl bg-white shadow-lg focus:outline-none text-lg text-slate-700">
+        </div>
+
+        <!-- Lista de Resultados -->
+        <div id="results" class="space-y-4">
+            <!-- Aquí aparecerán los libros -->
+        </div>
+    </div>
+
+    <script>
+        const searchInput = document.getElementById('searchInput');
+        const resultsContainer = document.getElementById('results');
+
+        searchInput.addEventListener('input', async (e) => {
+            const query = e.target.value;
+            if (query.length < 3) { resultsContainer.innerHTML = ''; return; }
+
+            try {
+                const response = await fetch(`www.googleapis.com{encodeURIComponent(query)}&maxResults=8`);
+                const data = await response.json();
+                
+                resultsContainer.innerHTML = '';
+                data.items.forEach(item => {
+                    const book = item.volumeInfo;
+                    const card = `
+                        <div class="glass-card p-6 mb-4 animate-fade-in">
+                            <div class="flex justify-between items-start">
+                                <div class="flex-1 pr-4">
+                                    <h3 class="font-bold text-slate-800 text-lg leading-tight">${book.title}</h3>
+                                    <p class="text-slate-500 text-sm mt-1">${book.authors ? book.authors.join(', ') : 'Autor Desconocido'}</p>
+                                </div>
+                                <button onclick="alert('Conocimiento integrado')" class="bg-[#00BFA5] w-12 h-12 rounded-xl flex items-center justify-center text-white shadow-lg">
+                                    <i class="fa-solid fa-plus"></i>
+                                </button>
+                            </div>
+                            <div class="mt-4 pt-4 border-t border-white/30">
+                                <p class="text-[#00BFA5] text-[10px] font-bold">[ANÁLISIS] Relación cognitiva detectada.</p>
+                            </div>
+                        </div>
+                    `;
+                    resultsContainer.innerHTML += card;
+                });
+            } catch (error) {
+                console.error("Error de red");
+            }
+        });
+    </script>
+</body>
+</html>
