@@ -25,12 +25,15 @@
             <p class="text-[#00BFA5] font-bold text-xs uppercase tracking-widest">Ecosistema de Cognición</p>
         </header>
 
-        <!-- Buscador -->
-        <div class="relative mb-8">
-            <i class="fa-solid fa-brain absolute left-4 top-4 text-[#00BFA5] text-xl"></i>
+        <!-- Buscador con Botón de Acción -->
+        <div class="relative mb-4 flex gap-3">
             <input type="text" id="searchInput" placeholder="Buscar conocimiento..." 
-                class="w-full h-14 pl-12 pr-4 rounded-2xl bg-white shadow-lg focus:outline-none text-lg text-slate-700">
+                class="flex-1 h-14 pl-4 pr-4 rounded-xl bg-white shadow-lg focus:outline-none text-lg text-slate-700">
+            <button onclick="searchBooks()" class="bg-[#00BFA5] w-14 h-14 rounded-xl flex items-center justify-center text-white shadow-lg">
+                <i class="fa-solid fa-magnifying-glass"></i>
+            </button>
         </div>
+        <p id="statusMessage" class="text-xs text-slate-500 mb-4 ml-2">Esperando búsqueda...</p>
 
         <!-- Lista de Resultados -->
         <div id="results" class="space-y-4">
@@ -41,40 +44,54 @@
     <script>
         const searchInput = document.getElementById('searchInput');
         const resultsContainer = document.getElementById('results');
+        const statusMessage = document.getElementById('statusMessage');
 
-        searchInput.addEventListener('input', async (e) => {
-            const query = e.target.value;
-            if (query.length < 3) { resultsContainer.innerHTML = ''; return; }
+        async function searchBooks() {
+            const query = searchInput.value;
+            if (query.length < 3) {
+                statusMessage.textContent = 'Ingrese al menos 3 letras.';
+                return;
+            }
+
+            statusMessage.textContent = 'Buscando...';
+            resultsContainer.innerHTML = '';
 
             try {
                 const response = await fetch(`www.googleapis.com{encodeURIComponent(query)}&maxResults=8`);
+                if (!response.ok) throw new Error('Error de servidor');
+                
                 const data = await response.json();
                 
-                resultsContainer.innerHTML = '';
-                data.items.forEach(item => {
-                    const book = item.volumeInfo;
-                    const card = `
-                        <div class="glass-card p-6 mb-4 animate-fade-in">
-                            <div class="flex justify-between items-start">
-                                <div class="flex-1 pr-4">
-                                    <h3 class="font-bold text-slate-800 text-lg leading-tight">${book.title}</h3>
-                                    <p class="text-slate-500 text-sm mt-1">${book.authors ? book.authors.join(', ') : 'Autor Desconocido'}</p>
+                if (data.items && data.items.length > 0) {
+                    statusMessage.textContent = `Hallados ${data.items.length} resultados.`;
+                    data.items.forEach(item => {
+                        const book = item.volumeInfo;
+                        const card = `
+                            <div class="glass-card p-6 mb-4">
+                                <div class="flex justify-between items-start">
+                                    <div class="flex-1 pr-4">
+                                        <h3 class="font-bold text-slate-800 text-lg leading-tight">${book.title}</h3>
+                                        <p class="text-slate-500 text-sm mt-1">${book.authors ? book.authors.join(', ') : 'Autor Desconocido'}</p>
+                                    </div>
+                                    <button onclick="alert('Conocimiento integrado: ${book.title}')" class="bg-[#00BFA5] w-12 h-12 rounded-xl flex items-center justify-center text-white shadow-lg">
+                                        <i class="fa-solid fa-plus-network"></i>
+                                    </button>
                                 </div>
-                                <button onclick="alert('Conocimiento integrado')" class="bg-[#00BFA5] w-12 h-12 rounded-xl flex items-center justify-center text-white shadow-lg">
-                                    <i class="fa-solid fa-plus"></i>
-                                </button>
+                                <div class="mt-4 pt-4 border-t border-white/30">
+                                    <p class="text-[#00BFA5] text-[10px] font-bold">[ANÁLISIS] Relación cognitiva detectada.</p>
+                                </div>
                             </div>
-                            <div class="mt-4 pt-4 border-t border-white/30">
-                                <p class="text-[#00BFA5] text-[10px] font-bold">[ANÁLISIS] Relación cognitiva detectada.</p>
-                            </div>
-                        </div>
-                    `;
-                    resultsContainer.innerHTML += card;
-                });
+                        `;
+                        resultsContainer.innerHTML += card;
+                    });
+                } else {
+                    statusMessage.textContent = 'No se encontraron resultados.';
+                }
             } catch (error) {
-                console.error("Error de red");
+                statusMessage.textContent = 'Error de conexión. Intente de nuevo.';
+                console.error("Error en la búsqueda:", error);
             }
-        });
+        }
     </script>
 </body>
 </html>
