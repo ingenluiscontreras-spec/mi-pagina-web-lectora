@@ -12,28 +12,32 @@ async function buscar() {
     resultadosDiv.innerHTML = "";
 
     try {
-        // CORRECCIÓN: La URL debe empezar con https:// y usar comillas invertidas ``
-        const url = `www.googleapis.com{encodeURIComponent(query)}&key=${API_KEY}`;
+        // CONSTRUCCIÓN SEGURA DE URL (Sin comillas invertidas para evitar errores en GitHub)
+        const baseUrl = "https://www.googleapis.com/books/v1/volumes";
+        const finalUrl = baseUrl + "?q=" + encodeURIComponent(query) + "&key=" + API_KEY;
         
-        console.log("Consultando a:", url); // Esto te servirá para ver la ruta real en consola
+        console.log("Intentando conectar a:", finalUrl);
 
-        const response = await fetch(url);
+        const response = await fetch(finalUrl);
         
         if (!response.ok) {
-            throw new Error(`Error de servidor: ${response.status}`);
+            // Si devuelve 403, tu API Key tiene restricciones en Google Console
+            // Si devuelve 400, la búsqueda está mal formada
+            throw new Error("Respuesta del servidor: " + response.status);
         }
 
         const data = await response.json();
 
-        if (!data.items) {
-            estadoDiv.innerHTML = "<span class='error'>No se encontraron libros.</span>";
+        if (!data.items || data.items.length === 0) {
+            estadoDiv.innerHTML = "<span class='error'>No se encontraron libros. Prueba con otro título.</span>";
             return;
         }
 
-        estadoDiv.innerHTML = `<span class='success'>Se encontraron ${data.items.length} resultados:</span>`;
+        estadoDiv.innerHTML = "<span class='success'>Resultados encontrados:</span>";
 
         data.items.forEach(libro => {
             const info = libro.volumeInfo;
+            // Forzamos HTTPS en las imágenes para evitar bloqueos de GitHub Pages
             const portada = info.imageLinks ? info.imageLinks.thumbnail.replace('http:', 'https:') : 'via.placeholder.com';
             
             const div = document.createElement('div');
@@ -43,15 +47,14 @@ async function buscar() {
                 <div class="info">
                     <h3>${info.title}</h3>
                     <p><strong>Autor:</strong> ${info.authors ? info.authors.join(', ') : 'Desconocido'}</p>
-                    <p><strong>Año:</strong> ${info.publishedDate || 'N/A'}</p>
-                    <a href="${info.infoLink}" target="_blank" style="color: #2563eb; text-decoration: none; font-size: 13px;">Más info →</a>
+                    <p><a href="${info.infoLink}" target="_blank">Ver en Google Books</a></p>
                 </div>
             `;
             resultadosDiv.appendChild(div);
         });
 
     } catch (error) {
-        console.error("Detalle del error:", error);
-        estadoDiv.innerHTML = `<span class='error'>Error: ${error.message}. Asegúrate de que la URL en el código empiece con https://</span>`;
+        console.error("Error detallado:", error);
+        estadoDiv.innerHTML = "<span class='error'>Error de conexión: " + error.message + "</span>";
     }
 }
