@@ -7,7 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="cdnjs.cloudflare.com" rel="stylesheet">
     <style>
-        body { background-color: #E0F2F1; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: #E0F2F1; font-family: sans-serif; }
         .glass-card {
             background: rgba(255, 255, 255, 0.55);
             backdrop-filter: blur(12px);
@@ -19,26 +19,21 @@
 </head>
 <body class="p-6">
     <div class="max-w-md mx-auto">
-        <!-- Header -->
         <header class="mb-8">
             <h1 class="text-5xl font-black text-[#004D40] tracking-tighter">Odyssey</h1>
             <p class="text-[#00BFA5] font-bold text-xs uppercase tracking-widest">Ecosistema de Cognición</p>
         </header>
 
-        <!-- Buscador con Botón de Acción -->
         <div class="relative mb-4 flex gap-3">
             <input type="text" id="searchInput" placeholder="Buscar conocimiento..." 
-                class="flex-1 h-14 pl-4 pr-4 rounded-xl bg-white shadow-lg focus:outline-none text-lg text-slate-700">
+                class="flex-1 h-14 pl-4 pr-4 rounded-xl bg-white shadow-lg focus:outline-none text-lg">
             <button onclick="searchBooks()" class="bg-[#00BFA5] w-14 h-14 rounded-xl flex items-center justify-center text-white shadow-lg">
                 <i class="fa-solid fa-magnifying-glass"></i>
             </button>
         </div>
-        <p id="statusMessage" class="text-xs text-slate-500 mb-4 ml-2">Esperando búsqueda...</p>
+        <p id="statusMessage" class="text-xs text-slate-500 mb-4 ml-2">Esperando acción...</p>
 
-        <!-- Lista de Resultados -->
-        <div id="results" class="space-y-4">
-            <!-- Aquí aparecerán los libros -->
-        </div>
+        <div id="results" class="space-y-4"></div>
     </div>
 
     <script>
@@ -46,50 +41,66 @@
         const resultsContainer = document.getElementById('results');
         const statusMessage = document.getElementById('statusMessage');
 
-        async function searchBooks() {
+        function searchBooks() {
             const query = searchInput.value;
             if (query.length < 3) {
                 statusMessage.textContent = 'Ingrese al menos 3 letras.';
                 return;
             }
 
-            statusMessage.textContent = 'Buscando...';
-            resultsContainer.innerHTML = '';
+            statusMessage.textContent = 'Buscando (XHR)...';
 
-            try {
-                const response = await fetch(`www.googleapis.com{encodeURIComponent(query)}&maxResults=8`);
-                if (!response.ok) throw new Error('Error de servidor');
-                
-                const data = await response.json();
-                
-                if (data.items && data.items.length > 0) {
-                    statusMessage.textContent = `Hallados ${data.items.length} resultados.`;
-                    data.items.forEach(item => {
-                        const book = item.volumeInfo;
-                        const card = `
-                            <div class="glass-card p-6 mb-4">
-                                <div class="flex justify-between items-start">
-                                    <div class="flex-1 pr-4">
-                                        <h3 class="font-bold text-slate-800 text-lg leading-tight">${book.title}</h3>
-                                        <p class="text-slate-500 text-sm mt-1">${book.authors ? book.authors.join(', ') : 'Autor Desconocido'}</p>
-                                    </div>
-                                    <button onclick="alert('Conocimiento integrado: ${book.title}')" class="bg-[#00BFA5] w-12 h-12 rounded-xl flex items-center justify-center text-white shadow-lg">
-                                        <i class="fa-solid fa-plus-network"></i>
-                                    </button>
-                                </div>
-                                <div class="mt-4 pt-4 border-t border-white/30">
-                                    <p class="text-[#00BFA5] text-[10px] font-bold">[ANÁLISIS] Relación cognitiva detectada.</p>
-                                </div>
-                            </div>
-                        `;
-                        resultsContainer.innerHTML += card;
-                    });
+            // Usando XMLHttpRequest: el método más compatible
+            const xhr = new XMLHttpRequest();
+            const url = `www.googleapis.com{encodeURIComponent(query)}&maxResults=8`;
+            
+            xhr.open("GET", url, true);
+
+            xhr.onload = function () {
+                if (xhr.status >= 200 && xhr.status < 400) {
+                    // Éxito: procesamos la respuesta
+                    const data = JSON.parse(xhr.responseText);
+                    displayResults(data);
                 } else {
-                    statusMessage.textContent = 'No se encontraron resultados.';
+                    // Error del servidor
+                    statusMessage.textContent = 'Error de servidor: ' + xhr.status;
                 }
-            } catch (error) {
-                statusMessage.textContent = 'Error de conexión. Intente de nuevo.';
-                console.error("Error en la búsqueda:", error);
+            };
+
+            xhr.onerror = function () {
+                // Error de red absoluto
+                statusMessage.textContent = 'Error de red (XHR). Revisa tu conexión.';
+            };
+
+            xhr.send();
+        }
+
+        function displayResults(data) {
+            resultsContainer.innerHTML = '';
+            if (data.items && data.items.length > 0) {
+                statusMessage.textContent = `Hallados ${data.items.length} resultados.`;
+                data.items.forEach(item => {
+                    const book = item.volumeInfo;
+                    const card = `
+                        <div class="glass-card p-6 mb-4">
+                            <div class="flex justify-between items-start">
+                                <div class="flex-1 pr-4">
+                                    <h3 class="font-bold text-slate-800 text-lg leading-tight">${book.title}</h3>
+                                    <p class="text-slate-500 text-sm mt-1">${book.authors ? book.authors.join(', ') : 'Autor Desconocido'}</p>
+                                </div>
+                                <button onclick="alert('Conocimiento integrado: ${book.title}')" class="bg-[#00BFA5] w-12 h-12 rounded-xl flex items-center justify-center text-white shadow-lg">
+                                    <i class="fa-solid fa-plus-network"></i>
+                                </button>
+                            </div>
+                            <div class="mt-4 pt-4 border-t border-white/30">
+                                <p class="text-[#00BFA5] text-[10px] font-bold">[ANÁLISIS] Relación cognitiva detectada.</p>
+                            </div>
+                        </div>
+                    `;
+                    resultsContainer.innerHTML += card;
+                });
+            } else {
+                statusMessage.textContent = 'No se encontraron resultados.';
             }
         }
     </script>
