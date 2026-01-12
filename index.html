@@ -2,77 +2,58 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Odyssey | Final</title>
-    <!-- CSS en línea para evitar dependencias externas -->
+    <title>Buscador de Libros 2026</title>
     <style>
-        body { font-family: sans-serif; padding: 20px; background-color: #E0F2F1; margin: 0; }
-        .container { max-width: 400px; margin: auto; }
-        .header { font-size: 24px; font-weight: bold; color: #004D40; margin-bottom: 10px; }
-        .subtitle { font-size: 12px; color: #00BFA5; text-transform: uppercase; margin-bottom: 15px; }
-        .input-group { display: flex; gap: 10px; margin-bottom: 10px; }
-        input { flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 8px; }
-        button { padding: 10px 15px; background-color: #00BFA5; color: white; border: none; border-radius: 8px; cursor: pointer; }
-        .card { background-color: rgba(255, 255, 255, 0.6); padding: 15px; margin-bottom: 10px; border-radius: 10px; border: 1px solid #fff; }
-        .title { font-weight: bold; }
-        .author { font-size: 0.9em; color: #555; }
-        .status { font-size: 0.8em; color: #777; margin-bottom: 5px; }
+        body { font-family: sans-serif; padding: 20px; }
+        .libro { border: 1px solid #ccc; padding: 10px; margin-top: 10px; display: flex; gap: 15px; }
+        img { max-width: 100px; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">Odyssey</div>
-        <div class="subtitle">Ecosistema de Cognición</div>
-        <p class="status" id="statusMessage">Esperando búsqueda...</p>
-        <div class="input-group">
-            <input type="text" id="searchInput" placeholder="Buscar libros...">
-            <button onclick="searchBooks()">Buscar</button>
-        </div>
-        <div id="results"></div>
-    </div>
 
-    <!-- JavaScript en línea -->
+    <h2>Buscador de Libros</h2>
+    <input type="text" id="busqueda" placeholder="Título, autor o ISBN...">
+    <button onclick="buscarLibro()">Buscar</button>
+
+    <div id="resultado"></div>
+
     <script>
-        function searchBooks() {
-            const query = document.getElementById('searchInput').value.trim();
-            if (query.length < 3) {
-                document.getElementById('statusMessage').textContent = 'Ingrese 3+ caracteres.';
-                return;
-            }
-            document.getElementById('statusMessage').textContent = 'Buscando...';
-            document.getElementById('results').innerHTML = '';
+        async function buscarLibro() {
+            const query = document.getElementById('busqueda').value;
+            const contenedor = document.getElementById('resultado');
+            contenedor.innerHTML = "Buscando...";
 
-            // URL CORRECTA
-            const url = "www.googleapis.com" + encodeURIComponent(query) + "&maxResults=8";
+            try {
+                // Conexión con la API de Google Books
+                const response = await fetch(`www.googleapis.com{query}`);
+                const data = await response.json();
 
-            fetch(url)
-                .then(response => {
-                    if (!response.ok) throw new Error(response.status);
-                    return response.json();
-                })
-                .then(data => {
-                    displayResults(data);
-                })
-                .catch(error => {
-                    document.getElementById('statusMessage').textContent = 'Error de red: ' + error.message;
-                });
-        }
+                if (data.totalItems === 0) {
+                    contenedor.innerHTML = "No se encontraron resultados.";
+                    return;
+                }
 
-        function displayResults(data) {
-            if (data.items && data.items.length > 0) {
-                document.getElementById('statusMessage').textContent = `Hallados ${data.items.length} resultados.`;
-                data.items.forEach(item => {
-                    const book = item.volumeInfo;
-                    const card = document.createElement('div');
-                    card.className = 'card';
-                    card.innerHTML = `
-                        <div class="title">${book.title}</div>
-                        <div class="author">${book.authors ? book.authors.join(', ') : 'Desconocido'}</div>
+                contenedor.innerHTML = ""; // Limpiar mensaje de carga
+
+                // Mostrar los primeros 3 resultados
+                data.items.slice(0, 3).forEach(item => {
+                    const info = item.volumeInfo;
+                    const portada = info.imageLinks ? info.imageLinks.thumbnail : 'via.placeholder.com';
+                    
+                    contenedor.innerHTML += `
+                        <div class="libro">
+                            <img src="${portada}" alt="Portada">
+                            <div>
+                                <h3>${info.title}</h3>
+                                <p><strong>Autor:</strong> ${info.authors ? info.authors.join(', ') : 'Desconocido'}</p>
+                                <p><strong>Publicación:</strong> ${info.publishedDate || 'N/A'}</p>
+                                <p>${info.description ? info.description.substring(0, 150) + '...' : 'Sin descripción'}</p>
+                            </div>
+                        </div>
                     `;
-                    document.getElementById('results').appendChild(card);
                 });
-            } else {
-                document.getElementById('statusMessage').textContent = 'No se encontraron resultados.';
+            } catch (error) {
+                contenedor.innerHTML = "Error al conectar con la base de datos.";
             }
         }
     </script>
