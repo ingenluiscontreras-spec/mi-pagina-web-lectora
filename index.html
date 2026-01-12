@@ -21,7 +21,7 @@
         <h1>Odyssey</h1>
         <p class="status" id="statusMessage">Esperando búsqueda...</p>
         <div class="input-group">
-            <input type="text" id="searchInput" placeholder="Buscar libros...">
+            <input type="text" id="searchInput" placeholder="Buscar libros (ej: Harry Potter)...">
             <button onclick="searchBooks()">Buscar</button>
         </div>
         <div id="results"></div>
@@ -34,11 +34,12 @@
                 document.getElementById('statusMessage').textContent = 'Ingrese 3+ caracteres.';
                 return;
             }
-            document.getElementById('statusMessage').textContent = 'Buscando...';
+            document.getElementById('statusMessage').textContent = 'Buscando en Open Library...';
             document.getElementById('results').innerHTML = '';
 
             try {
-                const response = await fetch(`www.googleapis.com{encodeURIComponent(query)}&maxResults=8`);
+                // Usando Open Library API: más ligera y compatible
+                const response = await fetch(`openlibrary.org{encodeURIComponent(query)}&limit=8`);
                 if (!response.ok) throw new Error(response.status);
                 const data = await response.json();
                 displayResults(data);
@@ -48,15 +49,14 @@
         }
 
         function displayResults(data) {
-            if (data.items && data.items.length > 0) {
-                document.getElementById('statusMessage').textContent = `Hallados ${data.items.length} resultados.`;
-                data.items.forEach(item => {
-                    const book = item.volumeInfo;
+            if (data.docs && data.docs.length > 0) {
+                document.getElementById('statusMessage').textContent = `Hallados ${data.docs.length} resultados.`;
+                data.docs.forEach(item => {
                     const card = document.createElement('div');
                     card.className = 'card';
                     card.innerHTML = `
-                        <div class="title">${book.title}</div>
-                        <div class="author">${book.authors ? book.authors.join(', ') : 'Desconocido'}</div>
+                        <div class="title">${item.title}</div>
+                        <div class="author">${item.author_name ? item.author_name.join(', ') : 'Desconocido'}</div>
                     `;
                     document.getElementById('results').appendChild(card);
                 });
